@@ -1,0 +1,6 @@
+1. make a class for a flight that contains the flight info and node to next flight and previous flight
+2. make a clas for a city that contains two lists- one for arrival flights to that city and one for departure flights to that city
+3. booking a flight add it to the city from whom itr will depart andto whpom it will arrive
+4. a class called FlightDatabase will contain an array of objects of all cities included in the list of cities 
+5. each city in the array will contain a list of all the flights arriving to it and departing from it and their times
+6. when a flight is cancelled, it will be added to another list within the flight FlightDatabase
