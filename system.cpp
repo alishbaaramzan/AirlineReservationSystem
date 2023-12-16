@@ -3,6 +3,8 @@
 #include <vector>
 #include<iterator>
 #include <algorithm>
+#include <queue>
+#include <limits>
 using namespace std;
 
 // class for DlinksDe between cities
@@ -11,15 +13,21 @@ class Link{
         int destinationID;
         string destinationName;
         float distance;
+        int day;
+        int month;
+        int year;
         int departure_hrs;
         int departure_mins;
 
         // constructors for assigning values 
         Link(){} // default constructor
-        Link(int id, string name, float dist, int dh, int dm){ // parameterized constructor
+        Link(int id, string name, float dist, int dd, int mm, int yyyy, int dh, int dm){ // parameterized constructor
             destinationID = id;
             destinationName = name;
             distance = dist;
+            day = dd;
+            month = mm;
+            year = yyyy;
             departure_hrs = dh;
             departure_mins = dm;
         }
@@ -44,7 +52,7 @@ class City{
             cout << "[";
             list<Link> :: iterator it;
             for(it = linksDeparture.begin(); it != linksDeparture.end(); ++it){
-                cout << "{" << it->destinationName << " (" << it->destinationID << ")_" << it->distance << "kms" << "_departing at " << it->departure_hrs << ":" << it->departure_mins << "}";
+                cout << "{" << it->destinationName << " (" << it->destinationID << ")_" << it->distance << "kms" << "_departing at " << it->day <<"/" << it->month <<"/" << it->year <<" _" << it->departure_hrs << ":" << it->departure_mins << "}";
             }
             cout << "]";
         }
@@ -53,7 +61,7 @@ class City{
             list<Link> :: iterator it;
             for(it = linksArrival.begin(); it != linksArrival.end(); ++it){
                 // here destinationID is for city that the flight arrived from-- typo
-                cout << "{" << it->destinationName << " (" << it->destinationID << ")_" << it->distance << "kms" << "_arriving at " << it->departure_hrs << ":" << it->departure_mins << "}";
+                cout << "{" << it->destinationName << " (" << it->destinationID << ")_" << it->distance << "kms" << "_arriving at " << it->day <<"/" << it->month <<"/" << it->year <<" _" << it->departure_hrs << ":" << it->departure_mins << "}";
             }
             cout << "]";
         }
@@ -94,7 +102,7 @@ class AirlineNetwork{
         // function to add a link between two cities
         // the link will suggest if there is a flight between the two cities
         // this function will make a directed connection between the two cities i.e. from city 1 to city 2
-        void addFlight(int id1, int id2, float distance, int dh, int dm, int hours){
+        void addFlight(int id1, int id2, float distance,int d, int m, int y, int dh, int dm, int hours){
             // checking if the two cities exist in the network
             bool check1 = checkIfCityExists(id1);
             bool check2 = checkIfCityExists(id2);
@@ -107,16 +115,16 @@ class AirlineNetwork{
                     City c2 = getCityByID(id2);
                     for(int i = 0; i < cities.size(); i++){
                         if(cities.at(i).cityID == id1){
-                            Link ld(id2,c2.cityName, distance, dh, dm); // departure from id1 to id2
+                            Link ld(id2,c2.cityName, distance,d, m, y, dh, dm); // departure from id1 to id2
                             cities.at(i).linksDeparture.push_back(ld);
-                            addArrivalFlight(id1, id2, distance, dh+hours, dm);
+                            addArrivalFlight(id1, id2, distance, d, m, y, dh+hours, dm);
                         }
                     }
                 }
             }
         }
         // function to update the arrival list of a City
-        void addArrivalFlight(int id1, int id2, int distance, int ah, int amins){
+        void addArrivalFlight(int id1, int id2, int distance,int d, int m, int y, int ah, int amins){
             // flight will arrive from id1 to id2
             // fixing the time first
             while(amins>60){
@@ -126,7 +134,7 @@ class AirlineNetwork{
             for(int i = 0; i < cities.size(); i++){
                 if(cities.at(i).cityID==id2){
                     City temp = getCityByID(id1);
-                    Link l(id1,temp.cityName, distance, ah, amins); // arrival link from id1 to id2
+                    Link l(id1,temp.cityName, distance,d, m, y, ah, amins); // arrival link from id1 to id2
                     cities.at(i).linksArrival.push_back(l);
                 }
             }
@@ -209,8 +217,8 @@ class AirlineNetwork{
         // Now printing the sorted list of flight departures
         list<Link>::iterator it;
         for (it = city.linksDeparture.begin(); it != city.linksDeparture.end(); ++it) {
-            cout << it->destinationName << " (" << it->destinationID << ") -- "
-                << "Departure Time: " << it->departure_hrs << ":" << it->departure_mins << endl;
+            cout << it->destinationName << " (" << it->destinationID << ") -- " << "Departure date: " << it->day << "/" << it->month << "/" << it->year << "_" <<
+                 "Departure Time: " << it->departure_hrs << ":" << it->departure_mins << endl;
         }
     }
     // function to show a list of flight arrivals for a city, sorted by the time of arrival. 
@@ -221,8 +229,8 @@ class AirlineNetwork{
         // Now printing the sorted list of flight departures
         list<Link>::iterator it;
         for (it = city.linksArrival.begin(); it != city.linksArrival.end(); ++it) {
-            cout << it->destinationName << " (" << it->destinationID << ") -- "
-                << "Arrival Time: " << it->departure_hrs << ":" << it->departure_mins << endl;
+            cout << it->destinationName << " (" << it->destinationID << ") -- " <<"Arrival date: " << it->day << "/" << it->month << "/" << it->year << "_" <<
+                 "Arrival Time: " << it->departure_hrs << ":" << it->departure_mins << endl;
         }
     }
     // function to show a list of all the cities which can be reached from a particular city
@@ -234,6 +242,75 @@ class AirlineNetwork{
             }
         }
 
+    }
+    // function to find the shortest route  between two cities
+    int shortestRoute(int id1, int id2){
+        // Applying Dijkstra's Algorithm
+
+        // Initialization
+        vector<int> distance(cities.size(), INT_MAX);
+        vector<bool> visited(cities.size(), false);
+        distance[id1] = 0;
+
+        // Dijkstra's Algorithm
+        for (int i = 0; i < cities.size() - 1; ++i) {
+            int u = -1;
+            // Find the unvisited city with the shortest distance
+            for (int j = 0; j < cities.size(); ++j) {
+                if (!visited[j] && (u == -1 || distance[j] < distance[u])) {
+                    u = j;
+                }
+            }
+
+            // Mark the selected city as visited
+            visited[u] = true;
+
+            // Update the distance of the neighboring cities
+            for (list<Link>::iterator it = cities[u].linksDeparture.begin(); it != cities[u].linksDeparture.end(); ++it) {
+                int v = it->destinationID;
+                if (!visited[v] && distance[u] != INT_MAX && distance[u] + it->distance < distance[v]) {
+                    distance[v] = distance[u] + it->distance;
+                }
+            }
+
+        }
+
+        // Return the shortest distance to the destination city
+        return distance[id2];
+    }
+
+    // function to find a route between two cities
+    list <City> findRouteBetweenCities(int id1, int id2){
+        // implementing bfs for finding the route
+        vector <bool> visited (cities.size(), false);
+        list <City> queue;
+        list<City> r; // route
+
+        // pushing first element in the queue
+        City first = getCityByID(id1);
+        queue.push_back(first);
+
+        bool breakpt = false;
+        while(!queue.empty() && !breakpt){
+            City temp = queue.front();
+            queue.pop_front();
+            // marking as visited
+            visited[temp.cityID] = true;
+            r.push_back(temp);
+
+            list <Link> :: iterator it;
+            for(it = temp.linksDeparture.begin(); it != temp.linksDeparture.end(); ++it){
+                if(!visited[it->destinationID]){
+                    queue.push_back(getCityByID(it->destinationID));
+                }
+                // checking if the destination node is found
+                if(it->destinationID == id2){
+                    r.push_back(getCityByID(it->destinationID));
+                    breakpt = true;
+                }
+            }
+        }
+        return r;
     }
 };
 // driver code
@@ -248,22 +325,23 @@ int main(){
     network->addCity(5, "Quetta");
 
     // adding flights between the cities
-    network->addFlight(1, 2, 200, 6, 30, 1);
-    network->addFlight(4, 2, 100, 7, 30, 1);
-    network->addFlight(5, 2, 50, 12, 30, 1);
-    network->addFlight(2, 1, 200, 16, 00, 4);
-    network->addFlight(3, 4, 100, 11, 50, 2);
-    network->addFlight(2, 5, 100, 14, 20, 1);
-    network->addFlight(2, 3, 55, 13, 45, 2);
+    network->addFlight(1, 2, 200, 12, 3, 2023, 6, 30, 1);
+    network->addFlight(4, 2, 100, 12, 3, 2023, 7, 30, 1);
+    network->addFlight(5, 2, 50, 12, 3, 2023,12, 30, 1);
+    network->addFlight(2, 1, 200, 12, 3, 2023, 16, 00, 4);
+    network->addFlight(3, 4, 100, 12, 3, 2023, 11, 50, 2);
+    network->addFlight(2, 5, 100, 12, 3, 2023,14, 20, 1);
+    network->addFlight(2, 3, 55, 12, 3, 2023,13, 45, 2);
+    network->addFlight(5, 4, 50, 12, 3, 2023,12, 30, 1);
 
-    // printing the network
-    // cout << "Departure Schedules are as follows: " << endl;
-    // network->printDepartures();
-    // cout << endl;
+//    //printing the network
+//     cout << "Departure Schedules are as follows: " << endl;
+//     network->printDepartures();
+//     cout << endl;
 
-    // cout << "Arrival Schedules are as follows: " << endl;
-    // network->printArrivals();
-    // cout << endl;
+//     cout << "Arrival Schedules are as follows: " << endl;
+//     network->printArrivals();
+//     cout << endl;
 
     //  Task 1 -- Show a list of all the cities serviced by airline in a tabular form.
     cout << "\nFollowing is the list of all the cities in the airline system in tabular form: " << endl;
@@ -281,6 +359,17 @@ int main(){
     cout << "\nList of all the cities that can be reached from Islamabad is as follows: " << endl;
     network->listOfCitiesFromaCity(2);
 
+    // Task 5 -- Find the shortest route between two cities
+    cout << "\nShortest route betweeb Karachi and Gilgit is : " << network->shortestRoute(1, 3) << " kilometers" << endl;
+
+    // Task 6 -- Find a route between two cities
+    cout << "\nRoute between Karachi(1) and Gilgit(4) is as follows: " << endl;
+    list <City> route = network->findRouteBetweenCities(1,4);
+    list <City> :: iterator it;
+    for(it = route.begin(); it != route.end(); ++it){
+        cout << it->cityID <<  "->";
+    }
+    
     delete network;
 
     return 0;
