@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <queue>
 #include <limits>
+#include <cstdlib>
 using namespace std;
 
 // forward decalaration
@@ -12,6 +13,8 @@ class Reservation;
 // class for a passenger
 class Passenger{
     public:
+    string name;
+    int pID;
     list <Reservation> passenger_reservations;
 };
 // Class for a reservation
@@ -359,9 +362,10 @@ class AirlineNetwork{
                         for(it = cities[i].linksDeparture.begin(); it != cities[i].linksDeparture.end(); ++it){
                             if(it->destinationID==destID){
                                 // we have found the flight
-                                Reservation r(cities[i].total_reservations++,cities[i].cityID, cities[i].cityName, it->destinationID, it->destinationName, it->distance, it->day, it->month, it->year, it->departure_hrs, it->departure_mins, pass_name);
+                                Reservation r(++cities[i].total_reservations,cities[i].cityID, cities[i].cityName, it->destinationID, it->destinationName, it->distance, it->day, it->month, it->year, it->departure_hrs, it->departure_mins, pass_name);
                                 cities[i].reservations.push_back(r); // reservation made
                                 p.passenger_reservations.push_back(r);
+                                cout << "Reservation for " << p.name << " is made in the flight from " << getCityByID(deptID).cityName << " to " << getCityByID(destID).cityName << endl;
                             }
                         }
                     }
@@ -389,17 +393,81 @@ class AirlineNetwork{
             cout << "Flight Time: " << it->departure_hrs << ":" << it->departure_mins << endl;
         }
     }
-    void deleteReservation(Passenger &p, int resID){
-        list <Reservation> :: iterator it;
-        for(it = p.passenger_reservations.begin(); it != p.passenger_reservations.end(); it++){
-            if(it->reservationID == resID){
-                p.passenger_reservations.erase(it);
-                cout << "Reservation " << resID << " deleted " << endl;
-                // delete from the respective city's resewrvations list as well
+    void deleteReservation(Passenger &p, int resID) {
+    list<Reservation>::iterator it;
+    // deleting from passenger's list of reservations
+    for (it = p.passenger_reservations.begin(); it != p.passenger_reservations.end(); it++) {
+        if (it->reservationID == resID) {
+            p.passenger_reservations.erase(it);
+            break;
+        }
+    }
+    // deleting from the respective city's list of reservations
+    for (int i = 0; i < cities.size(); i++) {
+        for (it = cities.at(i).reservations.begin(); it != cities.at(i).reservations.end(); ++it) {
+            if (it->reservationID == resID){
+                cities.at(i).reservations.erase(it);
+                cout << "Reservation " << resID << " deleted from " << cities.at(i).cityName << "'s flight schedule. " << endl;
                 break;
             }
         }
     }
+}
+
+    // function to return last name
+    string returnLastName(string fullName){
+        int ind = 0;
+        while(fullName[ind] != '\0'){
+            if(fullName[ind] == ' '){
+                ind++;
+                break;
+            }
+            ind++;
+        }
+        // now storing the remaining name in a string
+        string temp = "";
+        while(fullName[ind] != '\0'){
+            temp += fullName[ind++];
+        }
+        return temp;
+    }
+    // Function to print a list of passengers of a particular flight (in order of last name).
+    void printListOfPassengersinFlight(int deptID) {
+        list<Reservation> r;
+        
+        for (int i = 0; i < cities.size(); i++) {
+            if (cities.at(i).cityID == deptID) {
+                r = cities.at(i).reservations;
+                break;
+            }
+        }
+        
+        // now making a vector of all the reservations
+        vector<string> v;
+        list<Reservation>::iterator it;
+        
+        for (it = r.begin(); it != r.end(); ++it) {
+            v.push_back(it->pass_name);
+        }
+        // sorting the vector in order of the last name by bubble sort
+        for (int i = 0; i < v.size() - 1; i++) {
+            for (int j = 0; j < v.size() - i - 1; j++) {
+                string lastName1 = returnLastName(v.at(j));
+                string lastName2 = returnLastName(v.at(j + 1));
+                
+                if (lastName1[0] > lastName2[0]) {
+                    swap(v.at(j), v.at(j + 1));
+                }
+            }
+        }
+        
+        // printing the sorted vector
+        for (int i = 0; i < v.size(); i++) {
+            cout << v.at(i) << endl;
+        }
+    }
+
+
 };
 // driver code
 int main(){
@@ -425,14 +493,14 @@ int main(){
     network->addFlight(2, 3, 55, 12, 3, 2023,13, 45, 2);
     network->addFlight(5, 4, 50, 12, 3, 2023,12, 30, 1);
 
-//    //printing the network
-//     cout << "Departure Schedules are as follows: " << endl;
-//     network->printDepartures();
-//     cout << endl;
+       //printing the network
+        cout << "Departure Schedules are as follows: " << endl;
+        network->printDepartures();
+        cout << endl;
 
-//     cout << "Arrival Schedules are as follows: " << endl;
-//     network->printArrivals();
-//     cout << endl;
+        cout << "Arrival Schedules are as follows: " << endl;
+        network->printArrivals();
+        cout << endl;
 
     //  Task 1 -- Show a list of all the cities serviced by airline in a tabular form.
     cout << "\nFollowing is the list of all the cities in the airline system in tabular form: " << endl;
@@ -462,17 +530,25 @@ int main(){
     }
     
     // Task 7 -- Make an airline reservation for a passenger between two cities.
-    cout << "\n\nMaking reservation for a passenger for a flight from Karachi to Islamabad: " << endl;
+    cout << "\n\nMaking reservation for three passenger for a flight from Karachi to Islamabad: " << endl;
     network->makeReservation(passengers[++pass_id], 1, 2, "Alishba Ramzan");
+    network->makeReservation(passengers[++pass_id], 1, 2, "Noor Fatima");
+    network->makeReservation(passengers[++pass_id], 1, 2, "Ayesha Khan");
 
     // Task 8 -- Print a passenger's reservation schedule.
-    cout << "\nPrinting a passenger's reservation schedule: " << endl;
-    network->printReservations(passengers[pass_id]);
+    cout << "\nPrinting the passengers' reservation schedule: " << endl;
+    network->printReservations(passengers[pass_id]); cout << endl;
+    network->printReservations(passengers[pass_id-1]); cout << endl;
+    network->printReservations(passengers[pass_id-2]); cout << endl;
 
-    // needs improvements
     // Task 9 -- Delete a passenger's reservation
     cout << "\nDeleting the passenger reservation " << endl;
     network->deleteReservation(passengers[pass_id], 1);
+
+    // Task 10 --  Print a list of passengers of a particular flight (in order of last name). 
+    cout << "\nList of passengers in the flight from Karachi (in the order of their last name) is as follows: " << endl;
+    network->printListOfPassengersinFlight(1);
+
 
     delete network;
 
