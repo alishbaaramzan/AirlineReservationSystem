@@ -7,6 +7,36 @@
 #include <limits>
 using namespace std;
 
+// forward decalaration
+class Reservation;
+// class for a passenger
+class Passenger{
+    public:
+    list <Reservation> passenger_reservations;
+};
+// Class for a reservation
+class Reservation {
+public:
+    int reservationID;
+    int departureID;
+    string departureName;
+    int destinationID;
+    string destinationName;
+    float distance;
+    int day;
+    int month;
+    int year;
+    int departure_hrs;
+    int departure_mins;
+    string pass_name;
+
+    // Constructors for assigning values
+    Reservation() {} // Default constructor
+    Reservation(int resID, int deptID, string deptName, int destID, const string& destName, float dist, int dd, int mm, int yyyy, int dh, int dm, string name)
+        : reservationID(resID), departureID(deptID), departureName(deptName), destinationID(destID), destinationName(destName), distance(dist),
+          day(dd), month(mm), year(yyyy), departure_hrs(dh), departure_mins(dm), pass_name(name) {}
+};
+
 // class for DlinksDe between cities
 class Link{
     public:
@@ -39,10 +69,13 @@ class City{
         string cityName;
         list<Link> linksDeparture; // list of the departure to other cities
         list<Link> linksArrival; // list of the arrival from other cities
+        list<Reservation> reservations; // reservations for departure flights
+        int total_reservations;
         
         // constructors for assigning values
-        City(){} // default constructor
+        City() : total_reservations(0){} // default constructor
         City(int id, string name){
+            total_reservations = 0;
             cityID = id;
             cityName = name;
             // list of DlinksDepar will be updated separately
@@ -312,10 +345,68 @@ class AirlineNetwork{
         }
         return r;
     }
+    // function to make reservation for a passenger
+    void makeReservation(Passenger &p, int deptID,int destID, string pass_name){
+        bool check1 = checkIfCityExists(deptID);
+        bool check2 = checkIfCityExists(destID);
+        if(check1 && check2){
+            bool check3 = checkIfLinkExists(destID, deptID);
+            if(check3){
+                //iterating the edge list of departuring city to find the flight for which reservation is to be made
+                for(int i = 0; i < cities.size(); i++){
+                    if(cities[i].cityID == deptID){
+                        list <Link> :: iterator it;
+                        for(it = cities[i].linksDeparture.begin(); it != cities[i].linksDeparture.end(); ++it){
+                            if(it->destinationID==destID){
+                                // we have found the flight
+                                Reservation r(cities[i].total_reservations++,cities[i].cityID, cities[i].cityName, it->destinationID, it->destinationName, it->distance, it->day, it->month, it->year, it->departure_hrs, it->departure_mins, pass_name);
+                                cities[i].reservations.push_back(r); // reservation made
+                                p.passenger_reservations.push_back(r);
+                            }
+                        }
+                    }
+                }
+            }
+            else{
+                cout << " No flight available between city " << getCityByID(deptID).cityName << " and " << getCityByID(destID).cityName << endl;
+            }
+        }
+        else{
+            cout << " Invalid cities " << endl;
+        }
+    }
+
+    // function to print a passenger's reservation schedule
+    void printReservations(Passenger &p){
+        list <Reservation> :: iterator it;
+        int i = 0;
+        for(it = p.passenger_reservations.begin(); it != p.passenger_reservations.end(); ++it){
+            cout << "Reservation # " << ++i  << endl;
+            cout << "Passenger Name: " << it->pass_name << endl;
+            cout << "Departure City: " << it->departureName << " (" << it->departureID << ")" << endl;
+            cout << "Arrival City: " << it->destinationName << " (" << it->destinationID << ")" << endl;
+            cout << "Flight Date: " << it->day << "/" << it->month << "/" << it->year << endl;
+            cout << "Flight Time: " << it->departure_hrs << ":" << it->departure_mins << endl;
+        }
+    }
+    void deleteReservation(Passenger &p, int resID){
+        list <Reservation> :: iterator it;
+        for(it = p.passenger_reservations.begin(); it != p.passenger_reservations.end(); it++){
+            if(it->reservationID == resID){
+                p.passenger_reservations.erase(it);
+                cout << "Reservation " << resID << " deleted " << endl;
+                // delete from the respective city's resewrvations list as well
+                break;
+            }
+        }
+    }
 };
 // driver code
 int main(){
     AirlineNetwork* network = new AirlineNetwork;
+    Passenger* passengers = new Passenger[100]; // assuming the flights can only accomodate 100 passengers
+    int pass_id = 0;
+
     
     //adding cities to the network
     network->addCity(1, "Khi");
@@ -370,6 +461,19 @@ int main(){
         cout << it->cityID <<  "->";
     }
     
+    // Task 7 -- Make an airline reservation for a passenger between two cities.
+    cout << "\n\nMaking reservation for a passenger for a flight from Karachi to Islamabad: " << endl;
+    network->makeReservation(passengers[++pass_id], 1, 2, "Alishba Ramzan");
+
+    // Task 8 -- Print a passenger's reservation schedule.
+    cout << "\nPrinting a passenger's reservation schedule: " << endl;
+    network->printReservations(passengers[pass_id]);
+
+    // needs improvements
+    // Task 9 -- Delete a passenger's reservation
+    cout << "\nDeleting the passenger reservation " << endl;
+    network->deleteReservation(passengers[pass_id], 1);
+
     delete network;
 
     return 0;
