@@ -279,41 +279,51 @@ class AirlineNetwork{
         }
 
     }
-    // function to find the shortest route  between two cities
-    int shortestRoute(int id1, int id2){
-        // Applying Dijkstra's Algorithm
+    // using dijkstra's algorithm for finding the shortest path
+    int shortestRoute(int id1, int id2) {
+        // Priority queue to store vertices with the minimum distance at the top
+        priority_queue< pair<int, int>, vector< pair<int, int> >, greater< pair<int, int> > > pq;
 
         // Initialization
-        vector<int> distance(cities.size(), INT_MAX);
-        vector<bool> visited(cities.size(), false);
+        vector<int> distance(cities.size()+1, INT_MAX);
+        vector<bool> visited(cities.size()+1, false);
         distance[id1] = 0;
 
+        // Enqueue the source vertex with distance 0
+        pq.push(make_pair(0, id1));
+
         // Dijkstra's Algorithm
-        for (int i = 0; i < cities.size() - 1; ++i) {
-            int u = -1;
-            // Find the unvisited city with the shortest distance
-            for (int j = 0; j < cities.size(); ++j) {
-                if (!visited[j] && (u == -1 || distance[j] < distance[u])) {
-                    u = j;
-                }
+        while (!pq.empty()) {
+            // Extract the vertex with the minimum distance
+            int u = pq.top().second;
+            pq.pop();
+
+            // Skip if the vertex is already visited
+            if (visited[u]) {
+                continue;
             }
 
-            // Mark the selected city as visited
+            // Mark the current vertex as visited
             visited[u] = true;
 
-            // Update the distance of the neighboring cities
-            for (list<Link>::iterator it = cities[u].linksDeparture.begin(); it != cities[u].linksDeparture.end(); ++it) {
-                int v = it->destinationID;
-                if (!visited[v] && distance[u] != INT_MAX && distance[u] + it->distance < distance[v]) {
-                    distance[v] = distance[u] + it->distance;
-                }
+            for(int i = 0; i < cities.size(); i++){
+                if(cities.at(i).cityID == u){
+                    // Update the distance of the neighboring cities
+                    for (list<Link>::iterator it = cities[i].linksDeparture.begin(); it != cities[i].linksDeparture.end(); ++it) {
+                        int v = it->destinationID;
+                        if (!visited[v] && distance[u] != INT_MAX && distance[u] + it->distance < distance[v]) {
+                            distance[v] = distance[u] + it->distance;
+                            pq.push(make_pair(distance[v], v));
+                        }
+                    }
             }
-
+        }
         }
 
         // Return the shortest distance to the destination city
         return distance[id2];
     }
+
 
     // function to find a route between two cities
     list <City> findRouteBetweenCities(int id1, int id2){
@@ -519,7 +529,7 @@ int main(){
     network->listOfCitiesFromaCity(2);
 
     // Task 5 -- Find the shortest route between two cities
-    cout << "\nShortest route betweeb Karachi and Gilgit is : " << network->shortestRoute(1, 3) << " kilometers" << endl;
+    cout << "\nShortest route betweeb Karachi and Islamabad is : " << network->shortestRoute(1, 2) << " kilometers" << endl;
 
     // Task 6 -- Find a route between two cities
     cout << "\nRoute between Karachi(1) and Gilgit(4) is as follows: " << endl;
