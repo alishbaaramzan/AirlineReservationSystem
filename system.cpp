@@ -328,7 +328,7 @@ class AirlineNetwork{
     // function to find a route between two cities
     list <City> findRouteBetweenCities(int id1, int id2){
         // implementing bfs for finding the route
-        vector <bool> visited (cities.size(), false);
+        vector <bool> visited (cities.size()+1, false);
         list <City> queue;
         list<City> r; // route
 
